@@ -5,7 +5,7 @@
 #   3. 远端只安装生产依赖（express）
 #   4. 切换 current 软链并重启 systemd 服务
 #   5. 本机探活，保留最近 5 个版本
-# 一次性服务器初始化见 deploy/bootstrap.sh；Caddy 配置见 deploy/caddy-private.snippet。
+# 一次性服务器初始化见 deploy/bootstrap.sh；Caddy 配置见 deploy/caddy-fleeting.snippet。
 set -euo pipefail
 
 : "${LANG:=en_US.UTF-8}"
@@ -46,4 +46,4 @@ echo "== 5/5 探活与版本清理"
   ls -1dt $REMOTE_ROOT/releases/* | head -n $KEEP"
 
 echo "发布完成：版本 ${VERSION}"
-echo "外网验证：curl -sS -o /dev/null -w '%{http_code}\\n' https://liangz77.cn/private/"
+echo "外网验证：curl -sS -o /dev/null -w '%{http_code}\\n' https://liangz77.cn/fleeting/"

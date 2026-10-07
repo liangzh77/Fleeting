@@ -5,6 +5,9 @@ const status = document.querySelector<HTMLElement>("#status")!;
 const nav = document.querySelector<HTMLElement>("#nav")!;
 const dialog = document.querySelector<HTMLDialogElement>("#dialog")!;
 const dialogContent = document.querySelector<HTMLElement>("#dialogContent")!;
+// 站点可能把应用挂在子路径（例如 /fleeting/）。按文档目录推导接口前缀：
+// 目录式 URL 必须以 / 结尾（部署时需把 /fleeting 301/308 到 /fleeting/），根路径下得到空串。
+const apiBase = new URL(".", location.href).pathname.replace(/\/+$/, "");
 let session: {
   csrf: string;
   today: string;
@@ -101,7 +104,7 @@ async function api<T>(
   const controller = new AbortController();
   inflight.add(controller);
   try {
-    const res = await fetch("/api" + url, {
+    const res = await fetch(apiBase + "/api" + url, {
       signal: controller.signal,
       method,
       credentials: "same-origin",
@@ -283,7 +286,8 @@ async function render() {
         dateInput.value = selectedDay;
         dates.value = selectedDay;
         recordTitle.textContent = `${selectedDay} · 原始记录`;
-        markdownLink.href = "/api/export?format=markdown&day=" + selectedDay;
+        markdownLink.href =
+          apiBase + "/api/export?format=markdown&day=" + selectedDay;
         await records(recordsRoot, selectedDay, mine, recordTools);
         await report(reportRoot, "day", selectedDay, mine);
       } catch (err) {
@@ -386,6 +390,7 @@ async function render() {
   ]) {
     const a = el("a", title, "download");
     a.href =
+      apiBase +
       "/api/export?format=" +
       format +
       (format === "markdown" ? "&day=" + selectedDay : "");

@@ -88,7 +88,10 @@ try {
   assert.equal(statSync(configPath).mode & 0o777, 0o600);
   const home = await (await fetch(origin)).text();
   assert.match(home, /Fleeting/);
-  assert.match(home, /rel="icon" type="image\/svg\+xml" href="\/favicon\.svg"/);
+  // 资源引用保持相对路径，应用可被挂在 /fleeting/ 这类子路径下（见 tests/browser-base-path.ts）。
+  assert.match(home, /rel="icon" type="image\/svg\+xml" href="favicon\.svg"/);
+  assert.match(home, /href="style\.css"/);
+  assert.match(home, /src="app\.js"/);
   const favicon = await fetch(origin + "/favicon.svg");
   assert.equal(favicon.status, 200);
   assert.match(favicon.headers.get("content-type") || "", /image\/svg\+xml/);

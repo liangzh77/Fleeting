@@ -12,7 +12,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "test:browser": "npm run build && tsx tests/browser.ts",
+    "test:browser": "npm run build && tsx tests/browser.ts && tsx tests/browser-base-path.ts",
     "test:production": "npm run build && tsx tests/production.ts",
     "format:check": "prettier --check 'src/**/*.ts' 'web/**/*.{ts,html,css}' 'scripts/**/*.ts' 'tests/**/*.ts' '*.json'",
     "password": "tsx scripts/password.ts",

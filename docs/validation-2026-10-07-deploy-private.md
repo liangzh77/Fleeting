@@ -101,9 +101,8 @@ Fleeting 全部使用根绝对路径（`/api`、`/style.css`、`/app.js`、`/fav
   只有直接访问/刷新 `/private` 才进入 Fleeting。若要统一，需要在 go-sites 前端把该标签改为整页跳转（未做，等确认）。
 - 未做真实浏览器登录后的完整链路实测（需要口令），未在公网发起真实模型生成请求。
 - 证书仍由 Caddy 自动管理，本次未改动 TLS 配置。
-- **待办**：迁移 `fleeting.liangz77.cn`（用户要求：应用迁到子域，`/private` 只留跳转）。
-  `fleeting.liangz77.cn` 目前在阿里云 DNS 无 A 记录（`223.5.5.5`/`119.29.29.29` 均空，`resume.liangz77.cn` 有），
-  而服务器无 `aliyun` CLI/凭据，无法代加。DNS 生效后再一次性切换：
-  Caddyfile 新增 `https://fleeting.liangz77.cn { reverse_proxy 127.0.0.1:3010 }`，
-  `/private(?:/(.*))?` → `308 https://fleeting.liangz77.cn/{re...1}`，
-  远端 `config.local.json` 的 `origin` 改为 `https://fleeting.liangz77.cn`（Origin 校验按单值精确匹配，切换前不能先改，否则 `/private` 下 POST 全部 403）。
+> **后续（同日晚）**：用户决定改成路径部署 `https://liangz77.cn/fleeting/`（子域需要用户自己在阿里云加 A 记录），
+> `/private` 改为 308 永久跳转。切换同时发现：本文记录的「应用无需支持子路径」是错误假设 ——
+> 页面资源用根绝对路径时浏览器会到站点根取 `/style.css`、`/app.js`，落到 go-sites 上 404，
+> 页面实际无样式无脚本（当时只用 curl 验证，漏掉了这一点）。修复与复验见
+> `docs/validation-2026-10-07-deploy-fleeting-path.md`。
