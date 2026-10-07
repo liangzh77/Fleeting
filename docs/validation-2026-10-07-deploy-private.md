@@ -75,7 +75,18 @@ Fleeting 全部使用根绝对路径（`/api`、`/style.css`、`/app.js`、`/fav
 `X-Forwarded-For`，且登录限速按真实客户端地址分桶（已新增回归测试
 `经可信代理时登录限速按客户端地址区分`）。
 
-## 4. 数据与回退
+## 4. 本地私人数据迁移（2026-10-07 16:41）
+
+用户确认“本地数据搬到云服务器”。步骤（全程未回显原文）：
+
+1. 本地用 `npm run backup -- /tmp/fleeting-migrate-<stamp>.sqlite`（`node:sqlite` `backup()` 一致性快照，0600）导出运行中的真实库；`PRAGMA integrity_check` = ok。
+2. 比对本地与远端 `sqlite_master` 建表语句：仅 `entries` 表的 `, timeUnknown` 多余一个空格（ALTER 遗留），语义一致。
+3. 远端 `systemctl stop fleeting` → 备份原（空）库到 `shared/backups/fleeting-premigration-20261007164129.sqlite` → 删除旧 `-wal`/`-shm` → 装入快照（0600 `fleeting:fleeting`）→ 清空 `sessions`/`attempts`（口令不变，需重新登录）→ `systemctl start fleeting`。
+4. 核验：远端 `entries` 按日与字符数与本地完全一致（`2026-10-04` 1 条 2539 字、`2026-10-05` 1 条 1067 字、`2026-10-07` 2 条 142 字），`results` 中已完成的日/月整理与洞察一并迁移，服务 `active`。
+
+口令：**沿用同一份 `passwordHash`**（用户确认）。
+
+## 5. 数据与回退
 
 - **未迁移**本地私人记录，远端是全新空库（`entries` 为空）；迁移需要显式确认后再 `scp` 备份库并重启。
 - 远端复用本地 `passwordHash`；建议之后用 `npm run password` 换成独立强口令。
@@ -84,9 +95,15 @@ Fleeting 全部使用根绝对路径（`/api`、`/style.css`、`/app.js`、`/fav
   2. 停止应用：`systemctl disable --now fleeting`；
   3. 回退代码：把 `/srv/apps/fleeting/current` 指回上一个 `releases/<stamp>` 并 `systemctl restart fleeting`。
 
-## 5. 已知边界
+## 6. 已知边界
 
 - 主站 SPA 的「我的」标签是 `pushState` 客户端路由（`<button>`，不是链接），站内点击仍渲染旧「我的」页；
   只有直接访问/刷新 `/private` 才进入 Fleeting。若要统一，需要在 go-sites 前端把该标签改为整页跳转（未做，等确认）。
 - 未做真实浏览器登录后的完整链路实测（需要口令），未在公网发起真实模型生成请求。
 - 证书仍由 Caddy 自动管理，本次未改动 TLS 配置。
+- **待办**：迁移 `fleeting.liangz77.cn`（用户要求：应用迁到子域，`/private` 只留跳转）。
+  `fleeting.liangz77.cn` 目前在阿里云 DNS 无 A 记录（`223.5.5.5`/`119.29.29.29` 均空，`resume.liangz77.cn` 有），
+  而服务器无 `aliyun` CLI/凭据，无法代加。DNS 生效后再一次性切换：
+  Caddyfile 新增 `https://fleeting.liangz77.cn { reverse_proxy 127.0.0.1:3010 }`，
+  `/private(?:/(.*))?` → `308 https://fleeting.liangz77.cn/{re...1}`，
+  远端 `config.local.json` 的 `origin` 改为 `https://fleeting.liangz77.cn`（Origin 校验按单值精确匹配，切换前不能先改，否则 `/private` 下 POST 全部 403）。
