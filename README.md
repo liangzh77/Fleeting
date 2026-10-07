@@ -49,7 +49,7 @@ npm start
 
 服务只信任回环代理（如 Caddy）附加的 `X-Forwarded-For`：直连客户端无法伪造，反向代理下登录限速按真实客户端地址分桶（30 秒最多 8 次尝试），一台代理加多个访客不会互相牵连。建议代理额外做连接限速。成功登录也计入限额。密码修改需重启。不要通过反向代理暴露多个 Node 实例：生成锁是单实例设计。
 
-本仓库的 `deploy/` 目录包含生产部署材料：`bootstrap.sh`（服务器初始化：Node 运行时、服务账号、目录、systemd、每日备份）、`deploy.sh`（本地构建 + 上传 + 重启 + 探活）、`fleeting.service`、`backup.mjs`、`caddy-private.snippet`，说明见 `deploy/README.md`。参考实现部署在 `https://liangz77.cn/fleeting/`：Caddy 用 `handle_path` 把 `/fleeting/*` 交给应用（剥掉前缀），前端因此把资源引用写成相对路径、接口前缀由页面地址推导，同一份构建既能挂在根路径也能挂在子路径下；旧地址 `/private` 永久跳转到新地址。
+本仓库的 `deploy/` 目录包含生产部署材料：`bootstrap.sh`（服务器初始化：Node 运行时、服务账号、目录、systemd、每日备份）、`deploy.sh`（本地构建 + 上传 + 重启 + 探活）、`fleeting.service`、`backup.mjs`、`caddy-fleeting.snippet`，说明见 `deploy/README.md`。参考实现部署在 `https://liangz77.cn/fleeting/`：Caddy 用 `handle_path` 把 `/fleeting/*` 交给应用（剥掉前缀），前端因此把资源引用写成相对路径、接口前缀由页面地址推导，同一份构建既能挂在根路径也能挂在子路径下。入口只有这一个地址：主站 go-sites 的「我的」页（`/private`）里有一条指向 `https://liangz77.cn/fleeting/` 的应用条目，`/private` 本身仍是 go-sites 的页面，不做跳转。
 
 生产进程应以独立非 root 用户运行，使用 `umask 077`，私有配置 `chmod 600`、数据/备份目录 `chmod 700`，磁盘加密及严格主机访问权限由部署者承担。SQLite、备份和导出均是未加密的私人数据，不放到静态目录。运行目录保持项目根目录（静态文件从 `public/` 提供）。
 

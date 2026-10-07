@@ -1,6 +1,6 @@
 # 与 /etc/caddy/sites-enabled/liangz77.cn.caddy 中的 main_site_routes 配合使用。
-# 放在 (main_site_routes) 内、@tab_routes 之前，并把 /private 换成一条 308 跳转，
-# 这样 Caddy 只把 /fleeting 交给 Fleeting，其余标签页仍走 go-sites（127.0.0.1:9005）。
+# 放在 (main_site_routes) 内、@tab_routes 之前，这样 Caddy 只把 /fleeting 交给 Fleeting，
+# 其余标签页（含 /private，即 go-sites 自己的「我的」页）仍走 go-sites（127.0.0.1:9005）。
 #
 # 关键点：handle_path 会剥掉 /fleeting 前缀，Fleeting 因此看到根路径（/、/api/...）；
 # 但页面是在浏览器里以 /fleeting/ 为基址打开的，所以前端资源引用必须相对（index.html 用
@@ -16,15 +16,17 @@
 #         reverse_proxy 127.0.0.1:3010
 #     }
 #
-#     @legacy_private path_regexp legacy_private ^/private(?:/(.*))?$
-#     handle @legacy_private {
-#         redir https://liangz77.cn/fleeting/{re.legacy_private.1} 308
+#     @tab_routes path /search /recommendations /ai-tools /dev-tools /tools /fun /private /demo /wiki
+#     handle @tab_routes {
+#         reverse_proxy 127.0.0.1:9005
 #     }
 #
 # 注意：
-# 1. handle 之间互斥且按书写顺序匹配，因此这些段落必须在 @tab_routes 之前。
+# 1. handle 之间互斥且按书写顺序匹配，因此 /fleeting 这些段落必须在 @tab_routes 之前。
 # 2. `redir /fleeting/ permanent` 会被 Caddy 当成「/fleeting/ 是匹配器」，必须写成
 #    `redir * /fleeting/ permanent`。
-# 3. 旧路径用 308（保留方法与请求体），残留标签页里发往 /private/api/... 的 POST 也能正确落到新地址。
+# 3. `/private` 不要加跳转：它是 go-sites 自己的「我的」标签页，要留在 `@tab_routes` 里。
+#    让主站「我的」页连到 Fleeting 的方式是在 go-sites 仓库 `data.js` 的「我的 → 应用」里
+#    加一条指向 `https://liangz77.cn/fleeting/` 的条目（卡片 `target="_blank"`，全页新开标签）。
 # 4. Fleeting 的 origin 配置仍是站点根 `https://liangz77.cn`（Origin 校验按单值精确匹配），
 #    子路径不影响它。

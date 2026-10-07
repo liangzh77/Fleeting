@@ -5,7 +5,7 @@
 | 项目 | 值 |
 | --- | --- |
 | 服务器 | `49.232.129.114`（OpenCloudOS 9.4） |
-| 公网地址 | `https://liangz77.cn/fleeting/`（旧 `/private` 308 → 新地址） |
+| 公网地址 | `https://liangz77.cn/fleeting/`（唯一入口；主站「我的」页 `/private` 里有一条指向它的应用条目，`/private` 本身不跳转） |
 | 代码目录 | `/srv/apps/fleeting/releases/<时间戳>`，`current` 软链指向在用版本 |
 | 私有数据 | `/srv/apps/fleeting/shared/`（`config.local.json` 0600、`data/fleeting.sqlite`、`backups/`） |
 | 监听 | `127.0.0.1:3010`（仅回环，公网只能经 Caddy） |
@@ -40,6 +40,10 @@ bash deploy/deploy.sh
 `location` 推导接口前缀（`apiBase`）；若用根绝对路径（`/style.css`、`/app.js`、`/api/...`），浏览器会到
 站点根去取，落到 go-sites 上 404 —— 页面无样式且脚本不执行。目录式 URL 必须跳转到末尾斜杠
 （`/fleeting` → `/fleeting/`），否则相对路径解析错误。
+
+`/private` 保持为 go-sites 自己的「我的」标签页（留在 `@tab_routes` 里），不要加跳转；
+让主站连到 Fleeting 的做法是在 go-sites 仓库 `data.js` 的「我的 → 应用」里加一条
+指向 `https://liangz77.cn/fleeting/` 的条目（卡片以 `target="_blank"` 新开标签打开）。
 回归测试：`tsx tests/browser-base-path.ts`（本地起一个剥前缀代理，断言所有请求都在 `/fleeting/*`）。验证：
 
 ```bash
