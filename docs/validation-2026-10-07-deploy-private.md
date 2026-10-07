@@ -17,6 +17,7 @@
   `Restart=always`，`ProtectSystem=full` + `ReadWritePaths` 仅放开 shared/data。
   只监听 `127.0.0.1:3010`，不对公网暴露端口。
 - 每日备份 `/etc/cron.d/fleeting-backup` 03:30 调用 `deploy/backup.mjs`（`node:sqlite` 在线 `backup()`，保留 14 份）。
+  已以 `fleeting` 身份手动跑通一次：`fleeting-2026-10-07T06-04-51.sqlite`（0600，57344B，exit 0）。
 
 远端配置由本地 `config.local.json` 派生，只改 `origin` → `https://liangz77.cn`、
 `database` → `/srv/apps/fleeting/shared/data/fleeting.sqlite`，
