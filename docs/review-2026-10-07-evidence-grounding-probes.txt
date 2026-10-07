@@ -1,0 +1,200 @@
+TAP version 13
+# REPRO whitespace-first-match: exact aggregate succeeds; normalized aggregate fails after repair; supplied="甲\\n乙"; quote="甲 乙"; old ready retained
+# REPRO punctuation-first-match: exact aggregate succeeds; normalized aggregate fails after repair; supplied="甲,乙！"; quote="甲,乙!"; old ready retained
+# REPRO exact-hit-outside-supplied: exact aggregate succeeds; normalized aggregate fails after repair; supplied="甲\\n乙"; quote="甲 乙"; old ready retained
+# (node:30646) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent A: exact
+ok 1 - independent A: exact
+  ---
+  duration_ms: 12.849917
+  type: 'test'
+  ...
+# Subtest: independent A: whitespace-offsets
+ok 2 - independent A: whitespace-offsets
+  ---
+  duration_ms: 1.2005
+  type: 'test'
+  ...
+# Subtest: independent A: punctuation-offsets
+ok 3 - independent A: punctuation-offsets
+  ---
+  duration_ms: 1.068042
+  type: 'test'
+  ...
+# Subtest: independent A: combined-cross-fragment
+ok 4 - independent A: combined-cross-fragment
+  ---
+  duration_ms: 7.25975
+  type: 'test'
+  ...
+# Subtest: independent B: discard paraphrases, missing/empty evidence, preserve one insight, fail at zero with old ready intact
+ok 5 - independent B: discard paraphrases, missing/empty evidence, preserve one insight, fail at zero with old ready intact
+  ---
+  duration_ms: 1.922042
+  type: 'test'
+  ...
+# Subtest: independent B: one-record range may have zero grounded insights
+ok 6 - independent B: one-record range may have zero grounded insights
+  ---
+  duration_ms: 0.7075
+  type: 'test'
+  ...
+# Subtest: independent A/B: unknown id in insights still errors even with a valid insight
+ok 7 - independent A/B: unknown id in insights still errors even with a valid insight
+  ---
+  duration_ms: 0.686167
+  type: 'test'
+  ...
+# Subtest: independent A/B: unknown id in questions still errors even with a valid insight
+ok 8 - independent A/B: unknown id in questions still errors even with a valid insight
+  ---
+  duration_ms: 0.612125
+  type: 'test'
+  ...
+# Subtest: independent B: aggregation must not add a different original passage
+ok 9 - independent B: aggregation must not add a different original passage
+  ---
+  duration_ms: 0.98125
+  type: 'test'
+  ...
+# Subtest: independent B: fact remains mandatory
+ok 10 - independent B: fact remains mandatory
+  ---
+  duration_ms: 0.798875
+  type: 'test'
+  ...
+# Subtest: independent B: questions[0].text remains mandatory
+ok 11 - independent B: questions[0].text remains mandatory
+  ---
+  duration_ms: 0.535708
+  type: 'test'
+  ...
+# Subtest: independent A: existing id outside the generation month is invalid
+ok 12 - independent A: existing id outside the generation month is invalid
+  ---
+  duration_ms: 0.510583
+  type: 'test'
+  ...
+# Subtest: independent R1: aggregate normalized supplied evidence survives whitespace-first-match
+not ok 13 - independent R1: aggregate normalized supplied evidence survives whitespace-first-match
+  ---
+  duration_ms: 2.871791
+  type: 'test'
+  location: '/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:332:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    A/B require accepting this normalized supplied evidence and persisting its exact supplied original slice
+    + actual - expected
+    
+    + AiError: 月度层级聚合结构校验失败：insights 丢弃了无法落地的证据后洞察不足
+    +     at Ai.generate (/Users/liang/Desktop/github_projects/Fleeting/src/ai.ts:800:13)
+    +     at async Object.generate (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:48:7)
+    +     at async TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:359:9)
+    +     at async Test.run (node:internal/test_runner/test:1054:7)
+    +     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual:
+  error: '月度层级聚合结构校验失败：insights 丢弃了无法落地的证据后洞察不足'
+  stack: |-
+    Ai.generate (/Users/liang/Desktop/github_projects/Fleeting/src/ai.ts:800:13)
+    async Object.generate (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:48:7)
+    async TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:359:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:372:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: independent R1: aggregate normalized supplied evidence survives punctuation-first-match
+not ok 14 - independent R1: aggregate normalized supplied evidence survives punctuation-first-match
+  ---
+  duration_ms: 1.934959
+  type: 'test'
+  location: '/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:332:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    A/B require accepting this normalized supplied evidence and persisting its exact supplied original slice
+    + actual - expected
+    
+    + AiError: 月度层级聚合结构校验失败：insights 丢弃了无法落地的证据后洞察不足
+    +     at Ai.generate (/Users/liang/Desktop/github_projects/Fleeting/src/ai.ts:800:13)
+    +     at async Object.generate (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:48:7)
+    +     at async TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:359:9)
+    +     at async Test.run (node:internal/test_runner/test:1054:7)
+    +     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual:
+  error: '月度层级聚合结构校验失败：insights 丢弃了无法落地的证据后洞察不足'
+  stack: |-
+    Ai.generate (/Users/liang/Desktop/github_projects/Fleeting/src/ai.ts:800:13)
+    async Object.generate (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:48:7)
+    async TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:359:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:372:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: independent R1: aggregate normalized supplied evidence survives exact-hit-outside-supplied
+not ok 15 - independent R1: aggregate normalized supplied evidence survives exact-hit-outside-supplied
+  ---
+  duration_ms: 1.37425
+  type: 'test'
+  location: '/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:332:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    A/B require accepting this normalized supplied evidence and persisting its exact supplied original slice
+    + actual - expected
+    
+    + AiError: 月度层级聚合结构校验失败：insights 丢弃了无法落地的证据后洞察不足
+    +     at Ai.generate (/Users/liang/Desktop/github_projects/Fleeting/src/ai.ts:800:13)
+    +     at async Object.generate (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:48:7)
+    +     at async TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:359:9)
+    +     at async Test.run (node:internal/test_runner/test:1054:7)
+    +     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual:
+  error: '月度层级聚合结构校验失败：insights 丢弃了无法落地的证据后洞察不足'
+  stack: |-
+    Ai.generate (/Users/liang/Desktop/github_projects/Fleeting/src/ai.ts:800:13)
+    async Object.generate (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:48:7)
+    async TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:359:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/Users/liang/Desktop/github_projects/Fleeting/tests/review-grounding-probe.ts:372:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: independent C: Chrome hides missing/empty narratives, keeps populated narratives, exact evidence and source dialog
+ok 16 - independent C: Chrome hides missing/empty narratives, keeps populated narratives, exact evidence and source dialog
+  ---
+  duration_ms: 877.913708
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 13
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1265.204708
+
+EXIT 1

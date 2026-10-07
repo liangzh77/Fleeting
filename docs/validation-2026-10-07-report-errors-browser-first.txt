@@ -1,0 +1,26 @@
+
+> fleeting@1.0.0 test:browser
+> npm run build && tsx tests/browser.ts
+
+
+> fleeting@1.0.0 build
+> tsc -p tsconfig.server.json && esbuild web/app.ts --bundle --format=esm --outfile=public/app.js && cp web/index.html web/style.css web/favicon.svg public/
+
+
+  public/app.js  25.0kb
+
+⚡ Done in 8ms
+(node:21966) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS 浏览器 390×844：登录、保存丢响应重试、XSS、回看、编辑、缺模型、退出、无横向溢出
+PASS 浏览器 1280×900：登录、保存丢响应重试、XSS、回看、编辑、缺模型、退出、无横向溢出
+PASS 浏览器 mock AI：布局顺序、分段多来源/已删除弹窗、生成中与失败保留旧正文、月度图表、模型 XSS、删除后日/月保留
+PASS 独立审查回归：失败后继续编辑不丢草稿、退出取消延迟来源请求、跨午夜首页/日整理更新且保留草稿
+PASS 浏览器认证过期 save 401：私有界面隐藏、请求禁用、草稿/待确认正文/幂等键恢复、主动退出清除
+PASS 浏览器认证过期 background 401：私有界面隐藏、请求禁用、草稿/待确认正文/幂等键恢复、主动退出清除
+PASS 慢生成范围隔离：旧日生成中保存回今天，超过旧轮询周期及生成完成后日期/原文/整理始终一致
+PASS 合并页：旧日期写作按服务端今天保存、返回今天；新增后日/月提示且保留旧正文
+PASS 浏览器日期补录：按指定日期回看，不显示编造的记录时刻
+PASS 浏览器并行：日/月同时运行、切页按钮独立、旧完成与轮询不覆盖当前范围、草稿保留
+PASS Chrome R1/R2：旧最终GET 503隔离、一次轮询503自动恢复、ready停轮询、持续失败最多3次重试、切页/退出取消、旧内容与草稿保留
+EXIT_CODE=0

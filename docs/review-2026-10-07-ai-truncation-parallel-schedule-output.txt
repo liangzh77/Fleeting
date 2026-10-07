@@ -1,0 +1,346 @@
+=== Required checks ===
+
+$ npm run typecheck
+
+> fleeting@1.0.0 typecheck
+> tsc --noEmit
+
+
+EXIT=0
+
+$ npm test
+
+> fleeting@1.0.0 test
+> tsx --test tests/*.test.ts
+
+TAP version 13
+# (node:21068) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 日第二阶段截断也重新完成两阶段，全字符不丢
+ok 1 - 日第二阶段截断也重新完成两阶段，全字符不丢
+  ---
+  duration_ms: 27.283209
+  type: 'test'
+  ...
+# Subtest: 月聚合截断：压缩双方并有限重试，失败保留旧成功与完整分类
+ok 2 - 月聚合截断：压缩双方并有限重试，失败保留旧成功与完整分类
+  ---
+  duration_ms: 4.985833
+  type: 'test'
+  ...
+# (node:21069) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 截断自动拆分：日长单条与多条完整顺序、补录语义、月分类全覆盖与证据
+ok 3 - 截断自动拆分：日长单条与多条完整顺序、补录语义、月分类全覆盖与证据
+  ---
+  duration_ms: 42.75675
+  type: 'test'
+  ...
+# Subtest: 不可恢复截断有界失败、旧结果不清除
+ok 4 - 不可恢复截断有界失败、旧结果不清除
+  ---
+  duration_ms: 13.026042
+  type: 'test'
+  ...
+# Subtest: day/month 同时 running，同范围互斥；一方失败不影响另一方
+ok 5 - day/month 同时 running，同范围互斥；一方失败不影响另一方
+  ---
+  duration_ms: 2.925
+  type: 'test'
+  ...
+# Subtest: 日历昨天：年/月/闰日边界
+ok 6 - 日历昨天：年/月/闰日边界
+  ---
+  duration_ms: 0.063959
+  type: 'test'
+  ...
+# Subtest: 时区 00:59 跳过、01:00 一次、重启幂等、旧成功跳过、无配置/无记录
+ok 7 - 时区 00:59 跳过、01:00 一次、重启幂等、旧成功跳过、无配置/无记录
+  ---
+  duration_ms: 3.909292
+  type: 'test'
+  ...
+# Subtest: 自动失败持久幂等，手动冲突不消费机会，月任务不阻塞，DST 非本机时区
+ok 8 - 自动失败持久幂等，手动冲突不消费机会，月任务不阻塞，DST 非本机时区
+  ---
+  duration_ms: 4.452833
+  type: 'test'
+  ...
+# (node:21070) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 允许短密码但拒绝空密码
+ok 9 - 允许短密码但拒绝空密码
+  ---
+  duration_ms: 47.393958
+  type: 'test'
+  ...
+# Subtest: 时区午夜边界、合法日期与服务端记录日期
+ok 10 - 时区午夜边界、合法日期与服务端记录日期
+  ---
+  duration_ms: 10.643
+  type: 'test'
+  ...
+# Subtest: 旧数据库迁移和按日期补录：不编造时间，重复导入不重复，AI 仍可整理
+ok 11 - 旧数据库迁移和按日期补录：不编造时间，重复导入不重复，AI 仍可整理
+  ---
+  duration_ms: 79.055167
+  type: 'test'
+  ...
+# Subtest: 全私有接口鉴权、Origin、CSRF、会话 Cookie 与退出
+ok 12 - 全私有接口鉴权、Origin、CSRF、会话 Cookie 与退出
+  ---
+  duration_ms: 80.78825
+  type: 'test'
+  ...
+# Subtest: HTTPS Cookie、安全响应头与密码变更撤销会话
+ok 13 - HTTPS Cookie、安全响应头与密码变更撤销会话
+  ---
+  duration_ms: 70.848791
+  type: 'test'
+  ...
+# Subtest: 数据库重开保持原文，时区禁止静默更换，重启将未完成任务标失败
+ok 14 - 数据库重开保持原文，时区禁止静默更换，重启将未完成任务标失败
+  ---
+  duration_ms: 24.719583
+  type: 'test'
+  ...
+# Subtest: AI 超限在上传前拒绝
+ok 15 - AI 超限在上传前拒绝
+  ---
+  duration_ms: 26.554042
+  type: 'test'
+  ...
+# Subtest: 登录限速对并行失败请求生效
+ok 16 - 登录限速对并行失败请求生效
+  ---
+  duration_ms: 112.052542
+  type: 'test'
+  ...
+# Subtest: 保存原文、幂等重试、版本冲突、搜索、导出、重启与备份恢复
+ok 17 - 保存原文、幂等重试、版本冲突、搜索、导出、重启与备份恢复
+  ---
+  duration_ms: 71.567583
+  type: 'test'
+  ...
+# Subtest: 缺 AI 配置和模型错误不影响记录；错误不泄漏原文/密钥
+ok 18 - 缺 AI 配置和模型错误不影响记录；错误不泄漏原文/密钥
+  ---
+  duration_ms: 103.540167
+  type: 'test'
+  ...
+# Subtest: mock 日整理、月度证据与数值口径；新增/修改/删除保留旧文本并报告变更方向
+ok 19 - mock 日整理、月度证据与数值口径；新增/修改/删除保留旧文本并报告变更方向
+  ---
+  duration_ms: 77.052875
+  type: 'test'
+  ...
+# Subtest: 重新生成期间和失败后保留最近成功的日/月内容
+ok 20 - 重新生成期间和失败后保留最近成功的日/月内容
+  ---
+  duration_ms: 59.851292
+  type: 'test'
+  ...
+# Subtest: 主题统计按来源去重，多标签非百分比
+ok 21 - 主题统计按来源去重，多标签非百分比
+  ---
+  duration_ms: 0.095625
+  type: 'test'
+  ...
+# Subtest: 生成期间继续写，来源快照失效，避免旧报告被当成最新
+ok 22 - 生成期间继续写，来源快照失效，避免旧报告被当成最新
+  ---
+  duration_ms: 53.771375
+  type: 'test'
+  ...
+# Subtest: 模型坏 JSON / 不合法引用 / 伪造摘录被拒绝，长材料分块覆盖
+ok 23 - 模型坏 JSON / 不合法引用 / 伪造摘录被拒绝，长材料分块覆盖
+  ---
+  duration_ms: 28.644625
+  type: 'test'
+  ...
+# (node:21071) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 调度实际归档：跨年、闰日、DST 回拨的重复 01:00 不重复调用
+ok 24 - 调度实际归档：跨年、闰日、DST 回拨的重复 01:00 不重复调用
+  ---
+  duration_ms: 25.957041
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 983.788625
+
+EXIT=0
+
+$ npm run build
+
+> fleeting@1.0.0 build
+> tsc -p tsconfig.server.json && esbuild web/app.ts --bundle --format=esm --outfile=public/app.js && cp web/index.html web/style.css web/favicon.svg public/
+
+
+  public/app.js  24.4kb
+
+⚡ Done in 1ms
+
+EXIT=0
+
+$ npm run test:production
+
+> fleeting@1.0.0 test:production
+> npm run build && tsx tests/production.ts
+
+
+> fleeting@1.0.0 build
+> tsc -p tsconfig.server.json && esbuild web/app.ts --bundle --format=esm --outfile=public/app.js && cp web/index.html web/style.css web/favicon.svg public/
+
+
+  public/app.js  24.4kb
+
+⚡ Done in 2ms
+(node:21128) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS 编译后的服务：明文密码自动哈希并擦除、重设撤销旧会话、原文持久化与在线备份恢复
+
+EXIT=0
+
+$ CHROME_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' npm run test:browser
+
+> fleeting@1.0.0 test:browser
+> npm run build && tsx tests/browser.ts
+
+
+> fleeting@1.0.0 build
+> tsc -p tsconfig.server.json && esbuild web/app.ts --bundle --format=esm --outfile=public/app.js && cp web/index.html web/style.css web/favicon.svg public/
+
+
+  public/app.js  24.4kb
+
+⚡ Done in 1ms
+(node:21201) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS 浏览器 390×844：登录、保存丢响应重试、XSS、回看、编辑、缺模型、退出、无横向溢出
+PASS 浏览器 1280×900：登录、保存丢响应重试、XSS、回看、编辑、缺模型、退出、无横向溢出
+PASS 浏览器 mock AI：布局顺序、分段多来源/已删除弹窗、生成中与失败保留旧正文、月度图表、模型 XSS、删除后日/月保留
+PASS 独立审查回归：失败后继续编辑不丢草稿、退出取消延迟来源请求、跨午夜首页/日整理更新且保留草稿
+PASS 浏览器认证过期 save 401：私有界面隐藏、请求禁用、草稿/待确认正文/幂等键恢复、主动退出清除
+PASS 浏览器认证过期 background 401：私有界面隐藏、请求禁用、草稿/待确认正文/幂等键恢复、主动退出清除
+PASS 慢生成范围隔离：旧日生成中保存回今天，超过旧轮询周期及生成完成后日期/原文/整理始终一致
+PASS 合并页：旧日期写作按服务端今天保存、返回今天；新增后日/月提示且保留旧正文
+PASS 浏览器日期补录：按指定日期回看，不显示编造的记录时刻
+PASS 浏览器并行：日/月同时运行、切页按钮独立、旧完成与轮询不覆盖当前范围、草稿保留
+
+EXIT=0
+
+$ npm run format:check
+
+> fleeting@1.0.0 format:check
+> prettier --check 'src/**/*.ts' 'web/**/*.{ts,html,css}' 'scripts/**/*.ts' 'tests/**/*.ts' '*.json'
+
+Checking formatting...
+All matched files use Prettier code style!
+
+EXIT=0
+
+=== Independent probes: initial fixture run (see report explanation) ===
+TAP version 13
+# {"dayCalls":158,"firstTruncations":14,"secondTruncations":24,"chars":24000}
+# {"monthCalls":376,"maxDataChars":4181,"compressions":2,"coveredChars":120000}
+# restart running -> failed; repeated DST 01:00 sends 0; next day sends 2
+# (node:21372) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent: day first/second-stage truncation preserves every fragment in order, including surrogate boundaries
+ok 1 - independent: day first/second-stage truncation preserves every fragment in order, including surrogate boundaries
+  ---
+  duration_ms: 34.301375
+  type: 'test'
+  ...
+# Subtest: independent: 120000-character month full classification/leaf coverage, bounded aggregation retry, fabricated final evidence rejected
+ok 2 - independent: 120000-character month full classification/leaf coverage, bounded aggregation retry, fabricated final evidence rejected
+  ---
+  duration_ms: 47.259208
+  type: 'test'
+  ...
+# Subtest: independent: hard 512-call cap stops partially successful retry tree without replacing old ready
+not ok 3 - independent: hard 512-call cap stops partially successful retry tree without replacing old ready
+  ---
+  duration_ms: 37.940958
+  type: 'test'
+  location: '/Users/liang/Desktop/github_projects/Fleeting/docs/review-2026-10-07-ai-truncation-parallel-schedule-probes.mjs:87:1'
+  failureType: 'testCodeFailure'
+  error: '已尝试自动拆分/重试，仍受模型限制，未保存不完整结果；原文与旧整理保留'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Ai.generate (file:///Users/liang/Desktop/github_projects/Fleeting/dist/ai.js:446:19)
+    async TestContext.<anonymous> (file:///Users/liang/Desktop/github_projects/Fleeting/docs/review-2026-10-07-ai-truncation-parallel-schedule-probes.mjs:91:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: independent: durable automatic running claim survives restart; following calendar day still runs
+ok 4 - independent: durable automatic running claim survives restart; following calendar day still runs
+  ---
+  duration_ms: 4.951917
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 3
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 173.217958
+
+=== Independent probes: final run (exit 0) ===
+TAP version 13
+# {"dayCalls":158,"firstTruncations":14,"secondTruncations":24,"chars":24000}
+# {"monthCalls":376,"maxDataChars":4181,"compressions":2,"coveredChars":120000}
+# hard cap = 512 calls; old ready retained
+# restart running -> failed; repeated DST 01:00 sends 0; next day sends 2
+# (node:21478) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: independent: day first/second-stage truncation preserves every fragment in order, including surrogate boundaries
+ok 1 - independent: day first/second-stage truncation preserves every fragment in order, including surrogate boundaries
+  ---
+  duration_ms: 31.958834
+  type: 'test'
+  ...
+# Subtest: independent: 120000-character month full classification/leaf coverage, bounded aggregation retry, fabricated final evidence rejected
+ok 2 - independent: 120000-character month full classification/leaf coverage, bounded aggregation retry, fabricated final evidence rejected
+  ---
+  duration_ms: 45.976791
+  type: 'test'
+  ...
+# Subtest: independent: hard 512-call cap stops partially successful retry tree without replacing old ready
+ok 3 - independent: hard 512-call cap stops partially successful retry tree without replacing old ready
+  ---
+  duration_ms: 59.557875
+  type: 'test'
+  ...
+# Subtest: independent: durable automatic running claim survives restart; following calendar day still runs
+ok 4 - independent: durable automatic running claim survives restart; following calendar day still runs
+  ---
+  duration_ms: 4.663292
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 186.6885
+
+=== Browser bug reproduction: final run (exit 0 means bugs reproduced) ===
+(node:21479) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"reproduced":true,"before":"正在生成，可继续写随笔。本次仅发送所选范围的原文。","after":"REVIEW_OLD_DAY_REFRESH_FAILED","currentView":"month","monthState":"running"}
+{"reproduced":true,"case":"transient poll failure after returning to day","backend":"ready","buttonDisabled":true,"followupPolls":0,"status":"","waitedMs":5600}

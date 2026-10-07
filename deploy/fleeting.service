@@ -1,0 +1,25 @@
+[Unit]
+Description=Fleeting 随笔（个人日记与 AI 整理）
+Documentation=https://liangz77.cn/private
+After=network.target
+
+[Service]
+Type=simple
+User=fleeting
+Group=fleeting
+WorkingDirectory=/srv/apps/fleeting/current
+Environment=FLEETING_CONFIG=/srv/apps/fleeting/shared/config.local.json
+Environment=NODE_ENV=production
+Environment=PORT=3010
+Environment=HOST=127.0.0.1
+ExecStart=/usr/local/bin/node /srv/apps/fleeting/current/dist/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/apps/fleeting/shared
+
+[Install]
+WantedBy=multi-user.target

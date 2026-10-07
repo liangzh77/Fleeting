@@ -1,0 +1,11 @@
+# Private runtime configuration/data must never be read by formatting checks.
+config.local.json
+config.local.json.*
+.env
+.env.*
+data/
+*.sqlite*
+*.db*
+# Existing local measurement probes may contain private model/source material.
+scripts/__measure.ts
+scripts/__quotes.ts

@@ -1,0 +1,19 @@
+{
+  "origin": "http://localhost:3000",
+  "timezone": "Asia/Shanghai",
+  "database": "./data/fleeting.sqlite",
+  "password": "",
+  "llm": {
+    "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+    "apiKey": "",
+    "model": "deepseek-v4-1-flash-260910",
+    "reasoningEffort": "",
+    "extraBody": "",
+    "_reasoningExamples": {
+      "note": "仅作示例注释，不发送；实测部分服务商默认思考变慢并可能截断，可用 none 关闭，是否支持由服务商决定；默认空字符串保持原行为",
+      "reasoningEffort": "none",
+      "extraBody": "{\"thinking\":{\"type\":\"disabled\"}}",
+      "alternativeExtraBody": "{\"enable_thinking\":false}"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fleeting · 随笔</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Fleeting · 随笔</h1>
+      <nav aria-label="主导航" id="nav" hidden>
+        <button id="journalNav">随笔</button><button id="monthNav">洞察</button
+        ><button id="logout">退出</button>
+      </nav>
+    </header>
+    <p id="status" role="status" aria-live="polite"></p>
+    <main id="app"></main>
+    <dialog id="dialog">
+      <div id="dialogContent"></div>
+      <button id="closeDialog">关闭</button>
+    </dialog>
+  </body>
+</html>
