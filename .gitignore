@@ -1,10 +1,19 @@
+# build / runtime
+/fleeting
+/fleeting.exe
+*.exe
+*.tgz
 node_modules/
 dist/
 public/
+.parity/
 data/
+
+# private configuration and databases
 config.local.json
 .env
 *.sqlite*
 *.db*
 *.backup*
+
 .DS_Store

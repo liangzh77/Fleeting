@@ -1,5 +1,5 @@
 [Unit]
-Description=Fleeting 随笔（个人日记与 AI 整理）
+Description=Fleeting 随笔（Go 单文件服务）
 Documentation=https://liangz77.cn/private
 After=network.target
 
@@ -9,10 +9,10 @@ User=fleeting
 Group=fleeting
 WorkingDirectory=/srv/apps/fleeting/current
 Environment=FLEETING_CONFIG=/srv/apps/fleeting/shared/config.local.json
-Environment=NODE_ENV=production
+Environment=STATIC_ROOT=/srv/apps/fleeting/current/web
 Environment=PORT=3010
 Environment=HOST=127.0.0.1
-ExecStart=/usr/local/bin/node /srv/apps/fleeting/current/dist/server.js
+ExecStart=/srv/apps/fleeting/current/fleeting
 Restart=always
 RestartSec=3
 NoNewPrivileges=true

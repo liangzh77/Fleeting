@@ -1,50 +1,60 @@
 # 部署：https://liangz77.cn/fleeting/
 
-部署方式参照 `go-sites`（同一台服务器、同一个 Caddy 入口）：本地构建、上传产物、远端只装生产依赖、systemd 托管、Caddy 反代。
+Go 单文件二进制 + SQLite，部署方式与 `go-sites` 一致：本地交叉编译、上传 release、切换 `current` 软链、systemd 托管、Caddy 反代。**不需要 Node 运行时**。
 
 | 项目 | 值 |
 | --- | --- |
 | 服务器 | `49.232.129.114`（OpenCloudOS 9.4） |
-| 公网地址 | `https://liangz77.cn/fleeting/`（唯一入口；主站「我的」页 `/private` 里有一条指向它的应用条目，`/private` 本身不跳转） |
-| 代码目录 | `/srv/apps/fleeting/releases/<时间戳>`，`current` 软链指向在用版本 |
+| 公网地址 | `https://liangz77.cn/fleeting/` |
+| 代码目录 | `/srv/apps/fleeting/releases/<时间戳>`，`current` 软链指向在用版本，`previous` 指向上一个版本 |
 | 私有数据 | `/srv/apps/fleeting/shared/`（`config.local.json` 0600、`data/fleeting.sqlite`、`backups/`） |
 | 监听 | `127.0.0.1:3010`（仅回环，公网只能经 Caddy） |
 | 服务账号 | `fleeting`（系统账号，无登录 shell） |
-| 运行时 | `/usr/local/bin/node`（Node 22 LTS，来自腾讯云 Node 镜像） |
-| systemd | `fleeting.service` |
-| 备份 | `/etc/cron.d/fleeting-backup` 每日 03:30，保留 14 份 |
+| systemd | `fleeting.service`（`ExecStart=/srv/apps/fleeting/current/fleeting`） |
+| 备份 | `/etc/cron.d/fleeting-backup` 每日 03:30，调用二进制 `fleeting backup`，保留 14 份 |
 
-## 首次上线
+## 首次上线 / 新服务器
 
 ```bash
-# 1. 服务器初始化（以 root 运行，幂等）
+# 1. 服务器初始化（root；幂等；只建账号、目录、unit、cron，不装 Node）
 scp deploy/bootstrap.sh deploy/fleeting.service root@49.232.129.114:/tmp/
 ssh root@49.232.129.114 'install -d /srv/apps/fleeting/shared && cp /tmp/bootstrap.sh /tmp/fleeting.service /srv/apps/fleeting/shared/ 2>/dev/null; bash /tmp/bootstrap.sh'
 
-# 2. 写入私有配置（含密码哈希与模型 API Key，权限 0600、属主 fleeting）
-#    字段：origin（必须是 https://liangz77.cn）、timezone、database、passwordHash、llm
-#    本地生成密码哈希：npm run password
+# 2. 写入私有配置（0600 fleeting:fleeting）
+#    origin 必须是 https://liangz77.cn；timezone=Asia/Shanghai；database 指向 shared/data/fleeting.sqlite
+#    passwordHash 可复用旧 Node 版的 scrypt 哈希（格式与默认参数完全一致）
+#    模型配置可选；没有 llm 三项时 AI 自动关闭。
+#    本地生成哈希：printf '%s\n' '你的新密码' | go run ./cmd/fleeting password
 
-# 3. 首次发布
-bash deploy/deploy.sh
+# 3. 发布
+pwsh deploy/deploy.ps1
+```
+
+## 从旧 Node 版原地升级
+
+数据库 schema、scrypt 哈希、会话 Cookie 名和会话表完全兼容，因此不需要导出/导入：
+
+1. 先停掉旧服务或直接发布（发布脚本会在切换前用新二进制对共享数据库做一次 `VACUUM INTO` 一致性快照）。
+2. `deploy.ps1` 切换 `current`、安装新 unit、重启并探活；失败会自动回滚到 `previous` 并恢复旧 unit/cron。
+3. 旧会话（浏览器登录状态）保留，密码不变。
+4. 旧 release 仍保留在 `releases/`（默认保留 5 个），可手动回滚。
+
+手动回滚：
+
+```bash
+ln -sfn "$(readlink -f /srv/apps/fleeting/previous)" /srv/apps/fleeting/current
+cp /srv/apps/fleeting/shared/systemd/fleeting.service.<旧release> /etc/systemd/system/fleeting.service  # 若需要旧 unit
+systemctl daemon-reload
+systemctl restart fleeting
+curl -fsS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/
 ```
 
 ## Caddy
 
-反向代理片段在 `deploy/caddy-fleeting.snippet`。实际生效的配置是
-`/etc/caddy/sites-enabled/liangz77.cn.caddy`，它与 `go-sites` 仓库根目录的 `Caddyfile`
-保持一致（`go-sites` 的 `deploy.ps1` 每次发布会覆盖该文件）。
-
-要点：`handle_path` 会把 `/fleeting/*` 的前缀剥掉，Fleeting 因此看到根路径（`/`、`/style.css`、`/api/...`）。
-但浏览器页面仍在 `/fleeting/` 下打开，所以 `web/index.html` 的资源引用是相对路径，`web/app.ts` 从
-`location` 推导接口前缀（`apiBase`）；若用根绝对路径（`/style.css`、`/app.js`、`/api/...`），浏览器会到
-站点根去取，落到 go-sites 上 404 —— 页面无样式且脚本不执行。目录式 URL 必须跳转到末尾斜杠
-（`/fleeting` → `/fleeting/`），否则相对路径解析错误。
-
-`/private` 保持为 go-sites 自己的「我的」标签页（留在 `@tab_routes` 里），不要加跳转；
-让主站连到 Fleeting 的做法是在 go-sites 仓库 `data.js` 的「我的 → 应用」里加一条
-指向 `https://liangz77.cn/fleeting/` 的条目（卡片以 `target="_blank"` 新开标签打开）。
-回归测试：`tsx tests/browser-base-path.ts`（本地起一个剥前缀代理，断言所有请求都在 `/fleeting/*`）。验证：
+反向代理片段见 `deploy/caddy-fleeting.snippet`。实际生效的是
+`/etc/caddy/sites-enabled/liangz77.cn.caddy`，由 `go-sites` 的 `deploy.ps1` 发布时维护。
+`handle_path` 剥掉 `/fleeting` 前缀；页面使用相对资源路径，`web/app.js` 从 `location` 推导 API 前缀；
+目录式 URL 必须跳转到末尾斜杠。修改后：
 
 ```bash
 caddy validate --config /etc/caddy/Caddyfile
@@ -53,10 +63,13 @@ systemctl reload caddy
 
 ## 日常发布
 
-```bash
-bash deploy/deploy.sh                 # 构建 + 上传 + 重启 + 探活，保留最近 5 个版本
-HOST=1.2.3.4 KEEP=3 bash deploy/deploy.sh
+```powershell
+pwsh deploy/deploy.ps1                 # 构建 + 备份 + 上传 + 切换 + 探活 + 清理旧 release
+pwsh deploy/deploy.ps1 -Keep 3
+pwsh deploy/deploy.ps1 -SkipBackup     # 不额外做切换前备份
 ```
+
+发布脚本在健康检查或鉴权探活失败时会自动回滚，并输出 systemd 状态。
 
 ## 运维
 
@@ -64,15 +77,26 @@ HOST=1.2.3.4 KEEP=3 bash deploy/deploy.sh
 ssh root@49.232.129.114
 systemctl status fleeting          # 服务状态
 journalctl -u fleeting -n 50       # 日志（不记录原文与凭据）
-node /srv/apps/fleeting/current/deploy/backup.mjs   # 手动一致性备份
+
+# 手动一致性备份（数据库运行中也可执行）
+FLEETING_CONFIG=/srv/apps/fleeting/shared/config.local.json \
+  /srv/apps/fleeting/current/fleeting backup \
+  -dir /srv/apps/fleeting/shared/backups -keep 14
+
+# 查看数据摘要（可选；直接只读查询 SQLite）
 ```
 
-回滚：把 `current` 软链指回上一个 `releases/<时间戳>` 并 `systemctl restart fleeting`。
+恢复步骤：
 
-## 公网暴露的注意事项
+1. 停止 `fleeting`，备份当前数据库文件。
+2. 删除旧数据库旁的 `-wal` / `-shm`（只在服务停止后）。
+3. 用备份覆盖 `shared/data/fleeting.sqlite`，检查权限 0600、属主 fleeting。
+4. 如备份来源不完全可信，重设密码后再启动；登录核对日期和条数。
+
+## 公网暴露注意事项
 
 - 服务只监听 `127.0.0.1`，公网流量必须经过 Caddy 的 HTTPS。
-- `origin` 必须配置为 `https://liangz77.cn`，否则登录 Cookie 不会带 `Secure`，且跨站请求校验会拒绝。
-- 应用设置为只信任回环代理（`trust proxy = loopback`）附加的 `X-Forwarded-For`，登录限速因此按真实客户端地址分桶；
-  直接连到 3010 的请求无法伪造客户端地址。
-- AI 生成的整理与洞察会把原文发送给配置的模型服务商，这是产品设计的一部分；未配置 `llm` 时全部 AI 功能自动关闭。
+- `origin` 必须是 `https://liangz77.cn`，否则 Secure Cookie 与跨站请求校验会拒绝。
+- 登录限速只信任回环代理附加的 `X-Forwarded-For`；直连 3010 无法伪造客户端地址。
+- AI 整理会把所选范围的原文发送给配置的模型服务商；未配置 `llm` 时全部 AI 功能关闭。
+- SQLite、备份和导出都是未加密的私人数据，不放在静态目录；请使用加密磁盘和受控备份生命周期。

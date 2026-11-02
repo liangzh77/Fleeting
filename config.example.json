@@ -2,7 +2,7 @@
   "origin": "http://localhost:3000",
   "timezone": "Asia/Shanghai",
   "database": "./data/fleeting.sqlite",
-  "password": "",
+  "passwordHash": "",
   "llm": {
     "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
     "apiKey": "",
