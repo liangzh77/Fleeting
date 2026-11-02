@@ -19,7 +19,15 @@ func (g *generator) monthly() (Monthly, error) {
 		validate := func(raw map[string]any) (any, error) {
 			return validateClassification(raw, batch)
 		}
-		classifiedAny, err := g.structured("月度分类", classificationInstruction, batch, validate)
+		classifiedAny, err := g.structuredWithFallback(
+			"月度分类",
+			classificationInstruction,
+			batch,
+			validate,
+			func(raw map[string]any) (any, error) {
+				return validateClassificationLenient(raw, batch)
+			},
+		)
 		if err != nil {
 			if isTruncated(err) {
 				parts, splitErr := splitBatch(batch)
@@ -53,6 +61,11 @@ func (g *generator) monthly() (Monthly, error) {
 	}
 
 	onlyCompleted := len(completed) == 1
+	// Long originals may be split across chunks, so the union can exceed two
+	// labels even when each chunk obeyed the cap. Keep the primary two.
+	for index := range classifications {
+		classifications[index].Themes = capThemes(classifications[index].Themes, 2)
+	}
 	reviews := []review{}
 	for _, item := range completed {
 		part, err := g.leaves(item.batch, item.points, onlyCompleted)

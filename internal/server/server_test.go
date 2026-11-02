@@ -195,7 +195,7 @@ func serverFetcher(t *testing.T) ai.Fetcher {
 			out := []any{}
 			for _, item := range entries {
 				entry := item.(map[string]any)
-				out = append(out, map[string]any{"id": entry["id"], "themes": []any{"生活"}, "points": entry["text"]})
+				out = append(out, map[string]any{"id": entry["id"], "themes": []any{"生活与日常"}, "points": entry["text"]})
 			}
 			content = map[string]any{"entries": out}
 		} else if strings.Contains(prompt, "生成月度回顾") {

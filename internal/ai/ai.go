@@ -297,7 +297,7 @@ func (a *AI) run(id, kind, period string, entries []store.Entry, oversized bool)
 			"connections":     monthly.Connections,
 			"questions":       monthly.Questions,
 			"sources":         sources,
-			"promptVersion":   "3",
+			"promptVersion":   "4",
 		}
 	}
 	encoded, err := jsonutil.Marshal(data)
@@ -488,6 +488,14 @@ func (g *generator) call(instruction string, data any) (map[string]any, error) {
 // structured calls the model, validates the output, and allows one repair with
 // the candidate/error/task. Repair calls share the same global budget.
 func (g *generator) structured(stage, instruction string, data any, validate func(map[string]any) (any, error)) (any, error) {
+	return g.structuredWithFallback(stage, instruction, data, validate, nil)
+}
+
+// structuredWithFallback is structured() with a lenient validator that is used
+// only when the repaired output is still structurally invalid. Monthly
+// classification uses it to fold unknown theme names into 其他 instead of
+// failing the whole month.
+func (g *generator) structuredWithFallback(stage, instruction string, data any, validate func(map[string]any) (any, error), fallback func(map[string]any) (any, error)) (any, error) {
 	output, err := g.call(instruction, data)
 	if err != nil {
 		return nil, err
@@ -522,14 +530,26 @@ func (g *generator) structured(stage, instruction string, data any, validate fun
 		return nil, repairErr
 	}
 	validated, err = validate(repaired)
-	if err != nil {
-		var repairStructure *structureError
-		if errors.As(err, &repairStructure) {
-			return nil, aiErr(stage + "结构校验失败：" + repairStructure.message)
-		}
+	if err == nil {
+		return validated, nil
+	}
+	var repairStructure *structureError
+	if !errors.As(err, &repairStructure) {
 		return nil, err
 	}
-	return validated, nil
+	if fallback != nil {
+		g.warn(stage, "结构", "修复后仍不合规，按宽松规则继续")
+		result, fallbackErr := fallback(repaired)
+		if fallbackErr != nil {
+			var fallbackStructure *structureError
+			if errors.As(fallbackErr, &fallbackStructure) {
+				return nil, aiErr(stage + "结构校验失败：" + fallbackStructure.message)
+			}
+			return nil, fallbackErr
+		}
+		return result, nil
+	}
+	return nil, aiErr(stage + "结构校验失败：" + repairStructure.message)
 }
 
 // warn reports a dropped quote without ever including the quote itself.

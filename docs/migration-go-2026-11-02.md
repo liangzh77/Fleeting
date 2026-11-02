@@ -103,6 +103,10 @@ sections=1 segments=1 sources=1 promptVersion=3 outdated=false
   - 旧 cron 备份：`/srv/apps/fleeting/shared/systemd/fleeting-backup.20261102-151424`
   - 把 `current` 指回该 release，恢复 unit/cron，`systemctl daemon-reload && systemctl restart fleeting`。Node 运行时仍在服务器上，但新版不再依赖它。
 
+## 后续变更（2026-11-02）
+
+月度“洞察”的主题分类改为固定 10 类、每条最多 2 个标签，图表主题数硬限制 ≤10（含“其他”）。2026-10 已重新生成，从 47 类降到 9 类。详见 [`monthly-theme-taxonomy.md`](monthly-theme-taxonomy.md)。
+
 ## 已知差异（不影响功能）
 
 - 主题并列计数时的排序：Node 用 `localeCompare`，Go 用字节序；只影响同计数主题的显示顺序。

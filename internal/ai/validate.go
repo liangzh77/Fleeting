@@ -454,6 +454,17 @@ func clockHour(clock string) int {
 }
 
 func validateClassification(raw map[string]any, batch []input) (any, error) {
+	return validateClassificationMode(raw, batch, false)
+}
+
+// validateClassificationLenient is the one-time fallback after a repair: it only
+// relaxes unknown theme names (folding them into 其他), never the structural
+// requirements such as ids, points or full coverage.
+func validateClassificationLenient(raw map[string]any, batch []input) (any, error) {
+	return validateClassificationMode(raw, batch, true)
+}
+
+func validateClassificationMode(raw map[string]any, batch []input, lenient bool) (any, error) {
 	entriesRaw, err := arrayValue(raw["entries"], len(batch), "entries")
 	if err != nil {
 		return nil, err
@@ -485,20 +496,27 @@ func validateClassification(raw map[string]any, batch []input) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		themeSeen := map[string]bool{}
-		themes := make([]string, 0, len(themesRaw))
+		known := make([]string, 0, len(themesRaw))
+		unknown := false
 		for _, themeItem := range themesRaw {
 			theme, err := strValue(themeItem, 40, path+".themes")
 			if err != nil {
 				return nil, err
 			}
-			theme = textutil.Trim(theme)
-			if themeSeen[theme] {
+			canonical, ok := canonicalTheme(theme)
+			if !ok {
+				if !lenient {
+					return nil, &structureError{message: path + ".themes 包含不在主题表中的名称"}
+				}
+				unknown = true
 				continue
 			}
-			themeSeen[theme] = true
-			themes = append(themes, theme)
+			known = append(known, canonical)
 		}
+		if unknown {
+			known = append(known, "其他")
+		}
+		themes := capThemes(known, 2)
 		if len(themes) == 0 {
 			return nil, &structureError{message: path + ".themes 为空"}
 		}

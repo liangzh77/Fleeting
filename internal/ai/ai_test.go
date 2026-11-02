@@ -164,9 +164,9 @@ func (m *standardMock) fetch(call mockCall) mockReply {
 		for _, entry := range entries {
 			item := entry.(map[string]any)
 			text, _ := item["text"].(string)
-			themes := []any{"生活", "生活", "亲子"}
+			themes := []any{"生活与日常", "家庭与亲子"}
 			if strings.Contains(text, "AI") {
-				themes[2] = "AI"
+				themes = []any{"生活与日常", "AI与技术"}
 			}
 			out = append(out, map[string]any{
 				"id": item["id"], "themes": themes, "points": text,
@@ -250,7 +250,7 @@ func TestDailyAndMonthlyHappyPath(t *testing.T) {
 	foundLife := false
 	for _, item := range themes {
 		theme := item.(map[string]any)
-		if theme["name"] == "生活" {
+		if theme["name"] == "生活与日常" {
 			foundLife = true
 			if number(theme["count"]) != 2 {
 				t.Fatalf("theme count: %+v", theme)
@@ -270,6 +270,9 @@ func TestDailyAndMonthlyHappyPath(t *testing.T) {
 	}
 	if len(monthly["sources"].([]any)) != 2 {
 		t.Fatalf("sources: %+v", monthly["sources"])
+	}
+	if monthly["promptVersion"] != "4" {
+		t.Fatalf("monthly promptVersion: %+v", monthly["promptVersion"])
 	}
 	_ = b
 }
@@ -305,7 +308,7 @@ func TestGroundingNormalizationAndChunkedMonthly(t *testing.T) {
 					out := []any{}
 					for _, item := range data.([]any) {
 						entry := item.(map[string]any)
-						out = append(out, map[string]any{"id": entry["id"], "themes": []any{"主题"}, "points": "要点"})
+						out = append(out, map[string]any{"id": entry["id"], "themes": []any{"生活与日常"}, "points": "要点"})
 					}
 					return mockHTTP(t, reply(map[string]any{"entries": out}))
 				}
@@ -544,10 +547,7 @@ func TestStructureRepairOnceAndSoftCaps(t *testing.T) {
 			out := []any{}
 			for _, item := range entries {
 				entry := item.(map[string]any)
-				themes := []any{}
-				for index := 0; index < 7; index++ {
-					themes = append(themes, "主题"+itoa(index))
-				}
+				themes := []any{"工作与事业", "AI与技术", "学习与思考", "家庭与亲子", "人际与沟通", "情绪与心理", "健康与身体"}
 				out = append(out, map[string]any{
 					"id": entry["id"], "themes": themes,
 					"points": strings.Repeat("字", 999) + "😀",
@@ -609,7 +609,7 @@ func TestStructureRepairOnceAndSoftCaps(t *testing.T) {
 		t.Fatalf("fact length=%d", textutil.Len(firstInsight["fact"].(string)))
 	}
 	themes := out["themes"].([]any)
-	if len(themes) != 5 {
+	if len(themes) != 2 {
 		t.Fatalf("themes=%d", len(themes))
 	}
 	for _, item := range themes {
@@ -815,7 +815,7 @@ func TestSharedBudgetStopsAt512(t *testing.T) {
 				out := []any{}
 				for _, item := range task {
 					entry := item.(map[string]any)
-					out = append(out, map[string]any{"id": entry["id"], "themes": []any{"主题"}, "points": "要点"})
+					out = append(out, map[string]any{"id": entry["id"], "themes": []any{"其他"}, "points": "要点"})
 				}
 				return reply(map[string]any{"entries": out})
 			}
@@ -842,6 +842,165 @@ func TestSharedBudgetStopsAt512(t *testing.T) {
 	job, _ := st.LatestJob("month", entries[0].Day[:7])
 	if job == nil || job.State != "failed" {
 		t.Fatalf("job: %+v", job)
+	}
+}
+
+func TestMonthlyThemeTaxonomyNeverExceedsTen(t *testing.T) {
+	st := newStore(t)
+	cfg := testConfig()
+	at := mustTime("2026-10-01T00:00:00Z")
+	for index := 0; index < 20; index++ {
+		mustCreate(t, st, "合成记录"+itoa(index)+"：第"+itoa(index)+"条测试内容。", "taxonomy-"+itoa(index), at.Add(time.Duration(index)*time.Minute))
+	}
+	mock := &standardMock{
+		classify: func(entries []any) any {
+			out := []any{}
+			for index, item := range entries {
+				entry := item.(map[string]any)
+				first := monthlyThemes[index%len(monthlyThemes)]
+				second := monthlyThemes[(index+1)%len(monthlyThemes)]
+				out = append(out, map[string]any{
+					"id": entry["id"], "themes": []any{first, second}, "points": "要点",
+				})
+			}
+			return map[string]any{"entries": out}
+		},
+	}
+	service := newTestAI(t, st, cfg, mock.fetch)
+	if err := service.Generate("month", "2026-10", ""); err != nil {
+		t.Fatal(err)
+	}
+	out := readyData(t, st, "month", "2026-10")
+	allowed := map[string]bool{}
+	for _, theme := range monthlyThemes {
+		allowed[theme] = true
+	}
+	themes := out["themes"].([]any)
+	if len(themes) != len(monthlyThemes) {
+		t.Fatalf("expected %d themes, got %d: %+v", len(monthlyThemes), len(themes), themes)
+	}
+	for _, item := range themes {
+		theme := item.(map[string]any)
+		name, _ := theme["name"].(string)
+		if !allowed[name] || number(theme["count"]) < 1 {
+			t.Fatalf("invalid chart theme: %+v", theme)
+		}
+	}
+	classifications := out["classifications"].([]any)
+	if len(classifications) != 20 {
+		t.Fatalf("classifications=%d", len(classifications))
+	}
+	for _, item := range classifications {
+		entry := item.(map[string]any)
+		labels, _ := entry["themes"].([]any)
+		if len(labels) == 0 || len(labels) > 2 {
+			t.Fatalf("per-entry theme count: %+v", labels)
+		}
+		for _, label := range labels {
+			if !allowed[label.(string)] {
+				t.Fatalf("unexpected theme name: %v", label)
+			}
+		}
+	}
+	if out["promptVersion"] != "4" {
+		t.Fatalf("promptVersion: %+v", out["promptVersion"])
+	}
+}
+
+func TestUnknownThemeRepairedThenFoldedIntoOther(t *testing.T) {
+	st := newStore(t)
+	cfg := testConfig()
+	mustCreate(t, st, "合成原文甲", "unknown-a", mustTime("2026-10-01T00:00:00Z"))
+	mustCreate(t, st, "合成原文乙", "unknown-b", mustTime("2026-10-02T00:00:00Z"))
+	calls := 0
+	mock := &standardMock{
+		onCall: func(mockCall) { calls++ },
+		classify: func(entries []any) any {
+			out := []any{}
+			for _, item := range entries {
+				entry := item.(map[string]any)
+				out = append(out, map[string]any{
+					"id": entry["id"], "themes": []any{"不存在的主题"}, "points": "要点",
+				})
+			}
+			return map[string]any{"entries": out}
+		},
+	}
+	service := newTestAI(t, st, cfg, mock.fetch)
+	if err := service.Generate("month", "2026-10", ""); err != nil {
+		t.Fatal(err)
+	}
+	out := readyData(t, st, "month", "2026-10")
+	themes := out["themes"].([]any)
+	if len(themes) != 1 || themes[0].(map[string]any)["name"] != "其他" {
+		t.Fatalf("fallback themes: %+v", themes)
+	}
+	classifications := out["classifications"].([]any)
+	for _, item := range classifications {
+		labels := item.(map[string]any)["themes"].([]any)
+		if len(labels) != 1 || labels[0] != "其他" {
+			t.Fatalf("fallback labels: %+v", labels)
+		}
+	}
+	if calls != 3 {
+		t.Fatalf("calls=%d (expected initial + repair + leaf review)", calls)
+	}
+}
+
+func TestLongEntryThemesCappedAfterChunkMerge(t *testing.T) {
+	st := newStore(t)
+	cfg := testConfig()
+	text := strings.Repeat("甲", 3000) + strings.Repeat("乙", 3000)
+	mustCreate(t, st, text, "long-theme", mustTime("2026-10-01T00:00:00Z"))
+	mock := &standardMock{
+		classify: func(entries []any) any {
+			out := []any{}
+			for _, item := range entries {
+				entry := item.(map[string]any)
+				themes := []any{"工作与事业", "AI与技术"}
+				if !strings.Contains(entry["text"].(string), "甲") {
+					themes = []any{"学习与思考", "家庭与亲子"}
+				}
+				out = append(out, map[string]any{
+					"id": entry["id"], "themes": themes, "points": "要点",
+				})
+			}
+			return map[string]any{"entries": out}
+		},
+		review: func(call mockCall, originals []any) any {
+			evidence := []any{}
+			for _, original := range originals {
+				item := original.(map[string]any)
+				text := item["text"].(string)
+				quote := text
+				if len([]rune(text)) > 10 {
+					quote = string([]rune(text)[:10])
+				}
+				evidence = append(evidence, map[string]any{"id": item["id"], "quote": quote})
+			}
+			return map[string]any{
+				"overview": "概括",
+				"insights": []any{map[string]any{"fact": "事实", "evidence": evidence}},
+				"changes":  []any{}, "connections": []any{}, "questions": []any{},
+			}
+		},
+	}
+	service := newTestAI(t, st, cfg, mock.fetch)
+	if err := service.Generate("month", "2026-10", ""); err != nil {
+		t.Fatal(err)
+	}
+	out := readyData(t, st, "month", "2026-10")
+	classifications := out["classifications"].([]any)
+	if len(classifications) != 1 {
+		t.Fatalf("classifications=%d", len(classifications))
+	}
+	labels := classifications[0].(map[string]any)["themes"].([]any)
+	if len(labels) != 2 || labels[0] != "工作与事业" || labels[1] != "AI与技术" {
+		t.Fatalf("merged labels: %+v", labels)
+	}
+	themes := out["themes"].([]any)
+	if len(themes) != 2 {
+		t.Fatalf("chart themes: %+v", themes)
 	}
 }
 
