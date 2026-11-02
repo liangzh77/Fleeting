@@ -352,6 +352,17 @@ article.entry {
 .source:hover:not(:disabled) {
   color: var(--accent-deep);
 }
+.source-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
+.source-preview {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
 blockquote {
   margin: 12px 0;
   padding: 10px 16px;

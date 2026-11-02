@@ -29,10 +29,10 @@ type Evidence struct {
 	Day   string `json:"day"`
 }
 
-// Insight is one fact/hypothesis item in a monthly review.
+// Insight is one fact/advice item in a monthly review.
 type Insight struct {
 	Fact       string     `json:"fact"`
-	Hypothesis string     `json:"hypothesis"`
+	Advice     string     `json:"advice"`
 	Limitation string     `json:"limitation"`
 	Question   string     `json:"question"`
 	Evidence   []Evidence `json:"evidence"`
@@ -57,10 +57,11 @@ type Daily struct {
 	Sections []DailySection `json:"sections"`
 }
 
-// Classification is one entry's multi-label classification.
+// Classification is one entry's multi-label classification and one-line gist.
 type Classification struct {
 	ID     string   `json:"id"`
 	Themes []string `json:"themes"`
+	Gist   string   `json:"gist,omitempty"`
 }
 
 // Theme is a program-counted theme (unique source ids).
@@ -112,6 +113,7 @@ type point struct {
 type classified struct {
 	point
 	Themes []string `json:"themes"`
+	Gist   string   `json:"gist,omitempty"`
 }
 
 // Fetcher is the injectable HTTP transport used by tests.
@@ -297,7 +299,7 @@ func (a *AI) run(id, kind, period string, entries []store.Entry, oversized bool)
 			"connections":     monthly.Connections,
 			"questions":       monthly.Questions,
 			"sources":         sources,
-			"promptVersion":   "4",
+			"promptVersion":   "5",
 		}
 	}
 	encoded, err := jsonutil.Marshal(data)

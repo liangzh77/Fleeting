@@ -45,12 +45,15 @@ func (g *generator) monthly() (Monthly, error) {
 			for position := range classifications {
 				if classifications[position].ID == item.ID {
 					classifications[position].Themes = mergeStrings(classifications[position].Themes, item.Themes)
+					if classifications[position].Gist == "" && item.Gist != "" {
+						classifications[position].Gist = item.Gist
+					}
 					merged = true
 					break
 				}
 			}
 			if !merged {
-				classifications = append(classifications, Classification{ID: item.ID, Themes: item.Themes})
+				classifications = append(classifications, Classification{ID: item.ID, Themes: item.Themes, Gist: item.Gist})
 			}
 		}
 		points := make([]point, 0, len(classifiedItems))

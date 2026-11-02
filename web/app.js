@@ -19,6 +19,7 @@ var pendingText = null;
 var authEpoch = 0;
 var authenticated = false;
 var inflight = /* @__PURE__ */ new Set();
+var entryCache = /* @__PURE__ */ new Map();
 var refreshReport = null;
 var reportScope = 0;
 var reportRequest = 0;
@@ -56,6 +57,7 @@ function clearPrivate(preserveDraft = false) {
   authEpoch++;
   for (const controller of inflight) controller.abort();
   inflight.clear();
+  entryCache.clear();
   session = {
     csrf: "",
     today: "",
@@ -381,6 +383,7 @@ function drawEntries(root, entries, tools) {
       await api("/entries/" + selected.id, "DELETE", {
         version: selected.version
       });
+      entryCache.delete(selected.id);
       await render();
     })
   );
@@ -415,6 +418,7 @@ function edit(e) {
           text: input.value,
           version: e.version
         });
+        entryCache.delete(e.id);
         dialog.close();
         dialogContent.replaceChildren();
         await render();
@@ -428,13 +432,42 @@ function edit(e) {
   dialog.showModal();
   input.focus();
 }
+async function loadEntry(id) {
+  if (!entryCache.has(id)) {
+    entryCache.set(
+      id,
+      api("/entries/" + id).catch((error) => {
+        if (error instanceof Error && error.cause === 404) return null;
+        throw error;
+      })
+    );
+  }
+  return entryCache.get(id);
+}
+function previewText(text) {
+  const flat = text.replace(/\s+/g, " ").trim();
+  const chars = Array.from(flat);
+  if (chars.length <= 64) return flat;
+  const head = chars.slice(0, 64).join("");
+  const boundary = Math.max(
+    head.lastIndexOf("\u3002"),
+    head.lastIndexOf("\uFF01"),
+    head.lastIndexOf("\uFF1F"),
+    head.lastIndexOf("\uFF1B")
+  );
+  return boundary >= 20 ? head.slice(0, boundary + 1) : head + "\u2026";
+}
 async function showSources(ids) {
   const mine = epoch, generation = authEpoch;
   const content = el("div");
   for (const id of ids) {
     try {
-      const e = await api("/entries/" + id);
+      const e = await loadEntry(id);
       if (mine !== epoch || generation !== authEpoch) return;
+      if (e === null) {
+        content.append(el("p", id, "meta"), el("p", "\u539F\u6587\u5DF2\u5220\u9664", "muted"));
+        continue;
+      }
       content.append(
         el("h2", e.day + " \xB7 " + time(e)),
         el("p", e.id, "meta"),
@@ -456,28 +489,49 @@ async function showSources(ids) {
   dialogContent.replaceChildren(content);
   if (!dialog.open) dialog.showModal();
 }
-function source(id, day, quote) {
+function source(id, day, quote, gist) {
   const wrap = el("div");
   if (quote) wrap.append(el("blockquote", quote));
-  wrap.append(
+  const row = el("div", "", "source-row");
+  row.append(
     button(
       "\u67E5\u770B\u6765\u6E90" + (day ? " \xB7 " + day : ""),
       () => showSources([id]),
       "source"
     )
   );
+  if (!quote) {
+    if (gist?.trim()) {
+      row.append(el("span", gist, "source-preview"));
+    } else {
+      const preview = el("span", "\u52A0\u8F7D\u4E2D\u2026", "source-preview");
+      row.append(preview);
+      loadEntry(id).then((entry) => {
+        if (!preview.isConnected) return;
+        if (entry === null) {
+          preview.textContent = "\u539F\u6587\u5DF2\u5220\u9664";
+          return;
+        }
+        preview.textContent = (day ? "" : entry.day + " \xB7 ") + previewText(entry.text);
+      }).catch(() => {
+        if (preview.isConnected) preview.textContent = "\u7B80\u4ECB\u52A0\u8F7D\u5931\u8D25";
+      });
+    }
+  }
+  wrap.append(row);
   return wrap;
 }
 function showInsight(root, item) {
   const section = el("section");
   section.append(el("h3", "\u4E8B\u5B9E / \u539F\u6587\u8868\u8FBE"), el("p", item.fact, "body"));
-  if (item.hypothesis?.trim())
+  const advice = item.advice ?? item.hypothesis;
+  if (advice?.trim())
     section.append(
-      el("h3", "AI \u63D0\u51FA\u7684\u53EF\u80FD\u89E3\u91CA"),
-      el("p", item.hypothesis, "body")
+      el("h3", "AI \u5BF9\u6211\u7684\u5EFA\u8BAE"),
+      el("p", advice, "body")
     );
   if (item.limitation?.trim())
-    section.append(el("p", "\u5176\u4ED6\u89E3\u91CA / \u5C40\u9650\uFF1A" + item.limitation, "body"));
+    section.append(el("p", "\u9002\u7528\u6761\u4EF6 / \u5C40\u9650\uFF1A" + item.limitation, "body"));
   if (item.question?.trim())
     section.append(el("p", "\u8FFD\u95EE\uFF1A" + item.question, "body"));
   for (const e of item.evidence) section.append(source(e.id, e.day, e.quote));
@@ -630,6 +684,12 @@ async function report(root, kind, period, mine, scope = reportScope, readFailure
       "muted"
     )
   );
+  const gists = /* @__PURE__ */ new Map();
+  for (const item of data.classifications || []) {
+    if (item.gist?.trim()) gists.set(item.id, item.gist);
+  }
+  const sourceDays = /* @__PURE__ */ new Map();
+  for (const item of data.sources || []) sourceDays.set(item.id, item.day);
   for (const t of data.themes) {
     const block = el("div", "", "theme"), meter = el("progress");
     meter.className = "bar";
@@ -639,7 +699,7 @@ async function report(root, kind, period, mine, scope = reportScope, readFailure
     block.append(el("div", `${t.name} \xB7 ${t.count} \u6761`), meter);
     const details = el("details");
     details.append(el("summary", "\u5206\u7C7B\u6765\u6E90"));
-    for (const id of t.sources) details.append(source(id));
+    for (const id of t.sources) details.append(source(id, sourceDays.get(id), void 0, gists.get(id)));
     block.append(details);
     chart.append(block);
   }
@@ -653,7 +713,7 @@ async function report(root, kind, period, mine, scope = reportScope, readFailure
       narrative.append(el("p", "\u6750\u6599\u4E0D\u8DB3\uFF0C\u6682\u4E0D\u4F5C\u7ED3\u8BBA\u3002", "muted"));
     for (const item of items) showInsight(narrative, item);
   }
-  narrative.append(el("h3", "\u5F00\u653E\u95EE\u9898"));
+  narrative.append(el("h3", "\u7ED3\u5408\u5EFA\u8BAE\u7684\u8FFD\u95EE"));
   for (const q of data.questions) {
     narrative.append(el("p", q.text, "body"));
     showEvidence(narrative, q.evidence);

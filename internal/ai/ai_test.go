@@ -186,7 +186,7 @@ func (m *standardMock) fetch(call mockCall) mockReply {
 			evidence = append(evidence, map[string]any{"id": item["id"], "quote": text})
 		}
 		insight := map[string]any{
-			"fact": "记录中的自述", "hypothesis": "可能存在联系，尚待验证",
+			"fact": "记录中的自述", "advice": "基于事实的专业建议",
 			"limitation": "材料较少，非诊断", "question": "还有哪些不同情境？",
 			"evidence": evidence,
 		}
@@ -264,6 +264,13 @@ func TestDailyAndMonthlyHappyPath(t *testing.T) {
 	if len(insights) != 2 {
 		t.Fatalf("insights: %+v", insights)
 	}
+	firstInsight := insights[0].(map[string]any)
+	if firstInsight["advice"] != "基于事实的专业建议" {
+		t.Fatalf("advice field: %+v", firstInsight)
+	}
+	if _, hasLegacyHypothesis := firstInsight["hypothesis"]; hasLegacyHypothesis {
+		t.Fatalf("new result should use advice, not hypothesis: %+v", firstInsight)
+	}
 	evidence := insights[0].(map[string]any)["evidence"].([]any)[0].(map[string]any)
 	if evidence["day"] != "2026-10-01" {
 		t.Fatalf("evidence day: %+v", evidence)
@@ -271,7 +278,7 @@ func TestDailyAndMonthlyHappyPath(t *testing.T) {
 	if len(monthly["sources"].([]any)) != 2 {
 		t.Fatalf("sources: %+v", monthly["sources"])
 	}
-	if monthly["promptVersion"] != "4" {
+	if monthly["promptVersion"] != "5" {
 		t.Fatalf("monthly promptVersion: %+v", monthly["promptVersion"])
 	}
 	_ = b
@@ -355,7 +362,7 @@ func TestGroundingNormalizationAndChunkedMonthly(t *testing.T) {
 					t.Fatal("quote is not an original substring")
 				}
 				item := insights[0].(map[string]any)
-				for _, key := range []string{"hypothesis", "limitation", "question"} {
+				for _, key := range []string{"advice", "limitation", "question"} {
 					if item[key] != "" {
 						t.Fatalf("%s should be empty: %+v", key, item)
 					}
@@ -464,7 +471,7 @@ func TestMonthlyTruncationCompressionAndBudget(t *testing.T) {
 				evidence = append(evidence, map[string]any{"id": entry["id"], "quote": quote})
 			}
 			insight := map[string]any{
-				"fact": "材料", "hypothesis": "推测", "limitation": "有局限",
+				"fact": "材料", "advice": "建议", "limitation": "有局限",
 				"question": "问题", "evidence": evidence,
 			}
 			return map[string]any{
@@ -579,7 +586,7 @@ func TestStructureRepairOnceAndSoftCaps(t *testing.T) {
 			}
 			questions := []any{}
 			for index := 0; index < 5; index++ {
-				questions = append(questions, map[string]any{"text": "问题", "evidence": evidence})
+				questions = append(questions, map[string]any{"text": "问题" + itoa(index), "evidence": evidence})
 			}
 			return map[string]any{
 				"overview": strings.Repeat("字", 999) + "😀",
@@ -860,7 +867,8 @@ func TestMonthlyThemeTaxonomyNeverExceedsTen(t *testing.T) {
 				first := monthlyThemes[index%len(monthlyThemes)]
 				second := monthlyThemes[(index+1)%len(monthlyThemes)]
 				out = append(out, map[string]any{
-					"id": entry["id"], "themes": []any{first, second}, "points": "要点",
+					"id": entry["id"], "themes": []any{first, second},
+					"gist": "合成简介" + itoa(index), "points": "要点",
 				})
 			}
 			return map[string]any{"entries": out}
@@ -896,13 +904,16 @@ func TestMonthlyThemeTaxonomyNeverExceedsTen(t *testing.T) {
 		if len(labels) == 0 || len(labels) > 2 {
 			t.Fatalf("per-entry theme count: %+v", labels)
 		}
+		if gist, _ := entry["gist"].(string); gist == "" {
+			t.Fatalf("missing gist: %+v", entry)
+		}
 		for _, label := range labels {
 			if !allowed[label.(string)] {
 				t.Fatalf("unexpected theme name: %v", label)
 			}
 		}
 	}
-	if out["promptVersion"] != "4" {
+	if out["promptVersion"] != "5" {
 		t.Fatalf("promptVersion: %+v", out["promptVersion"])
 	}
 }
@@ -958,11 +969,13 @@ func TestLongEntryThemesCappedAfterChunkMerge(t *testing.T) {
 			for _, item := range entries {
 				entry := item.(map[string]any)
 				themes := []any{"工作与事业", "AI与技术"}
+				gist := "甲片段简介"
 				if !strings.Contains(entry["text"].(string), "甲") {
 					themes = []any{"学习与思考", "家庭与亲子"}
+					gist = "乙片段简介"
 				}
 				out = append(out, map[string]any{
-					"id": entry["id"], "themes": themes, "points": "要点",
+					"id": entry["id"], "themes": themes, "gist": gist, "points": "要点",
 				})
 			}
 			return map[string]any{"entries": out}
@@ -998,9 +1011,51 @@ func TestLongEntryThemesCappedAfterChunkMerge(t *testing.T) {
 	if len(labels) != 2 || labels[0] != "工作与事业" || labels[1] != "AI与技术" {
 		t.Fatalf("merged labels: %+v", labels)
 	}
+	if gist := classifications[0].(map[string]any)["gist"]; gist != "甲片段简介" {
+		t.Fatalf("merged gist: %+v", gist)
+	}
 	themes := out["themes"].([]any)
 	if len(themes) != 2 {
 		t.Fatalf("chart themes: %+v", themes)
+	}
+}
+
+func TestInsightAdviceFieldAndLegacyFallback(t *testing.T) {
+	cases := []struct {
+		object map[string]any
+		want   string
+	}{
+		{map[string]any{"advice": "专业建议"}, "专业建议"},
+		{map[string]any{"hypothesis": "旧解释"}, "旧解释"},
+		{map[string]any{"advice": "", "hypothesis": "旧解释"}, "旧解释"},
+		{map[string]any{}, ""},
+	}
+	for _, item := range cases {
+		got, err := insightAdvice(item.object, "insights[0]")
+		if err != nil || got != item.want {
+			t.Fatalf("insightAdvice(%+v)=%q, %v; want %q", item.object, got, err, item.want)
+		}
+	}
+	if _, err := insightAdvice(map[string]any{"advice": nil}, "insights[0]"); err == nil {
+		t.Fatal("null advice should be a structure error")
+	}
+}
+
+func TestQuestionsValueDeduplicatesIdenticalText(t *testing.T) {
+	entries := []store.Entry{{ID: "a", Text: "原文甲", Day: "2026-10-01"}}
+	g := &generator{ai: &AI{warnf: func(string, ...any) {}}}
+	evidence := []any{map[string]any{"id": "a", "quote": "原文甲"}}
+	value := []any{
+		map[string]any{"text": "同一个问题", "evidence": evidence},
+		map[string]any{"text": "同一个问题", "evidence": evidence},
+		map[string]any{"text": "另一个问题", "evidence": evidence},
+	}
+	questions, err := questionsValue(value, entries, 4, "questions", "test", g, nil)
+	if err != nil || len(questions) != 2 {
+		t.Fatalf("questions=%+v err=%v", questions, err)
+	}
+	if questions[0].Text != "同一个问题" || questions[1].Text != "另一个问题" {
+		t.Fatalf("question order/content: %+v", questions)
 	}
 }
 

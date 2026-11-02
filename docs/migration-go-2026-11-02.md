@@ -105,7 +105,7 @@ sections=1 segments=1 sources=1 promptVersion=3 outdated=false
 
 ## 后续变更（2026-11-02）
 
-月度“洞察”的主题分类改为固定 10 类、每条最多 2 个标签，图表主题数硬限制 ≤10（含“其他”）。2026-10 已重新生成，从 47 类降到 9 类。详见 [`monthly-theme-taxonomy.md`](monthly-theme-taxonomy.md)。
+月度“洞察”的主题分类改为固定 10 类、每条最多 2 个标签，图表主题数硬限制 ≤10（含“其他”）；每条分类新增一句话简介（gist），洞察的“可能解释”改为“AI 对我的建议”，追问改为建议驱动，重复问题合并。2026-10 已重新生成，从 47 类降到 9 类，promptVersion 5。详见 [`monthly-theme-taxonomy.md`](monthly-theme-taxonomy.md)。
 
 ## 已知差异（不影响功能）
 
