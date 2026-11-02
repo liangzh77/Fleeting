@@ -79,10 +79,10 @@ sections=1 segments=1 sources=1 promptVersion=3 outdated=false
 
 ### 5. 备份与部署
 
-- 部署脚本在切换前用新二进制执行 `VACUUM INTO`，生成 `fleeting-2026-11-02T07-16-58.sqlite`。
-- 发现并修复备份清理 bug：旧实现按 mtime 降序删除，会误删**最新**备份；改为升序删除最旧，并加回归测试。修复后重新发布为 `20261102-151654`。
-- 以 `fleeting` 用户执行 cron 同款命令：生成 `fleeting-2026-11-02T07-17-14.sqlite`，保留 14 份，权限 `-rw------- fleeting fleeting`，打开核对 entries **21**、results **30**。
-- 发布：`current -> releases/20261102-151654`，`previous -> releases/20261102-151424`；`systemctl is-active fleeting` = active，enabled；日志只有启动信息。
+- 部署脚本在切换前用新二进制执行 `VACUUM INTO`；三次发布各生成一份切换前备份，最新为 `fleeting-2026-11-02T07-21-54.sqlite`（entries 21 / results 30，`-rw------- fleeting fleeting`）。
+- 发现并修复备份清理 bug：旧实现按 mtime 降序删除，会误删**最新**备份；改为升序删除最旧，并加回归测试。修复后发布为 `20261102-151654`。
+- 以 `fleeting` 用户执行 cron 同款命令：生成 `fleeting-2026-11-02T07-17-14.sqlite`，保留 14 份，权限 0600，打开核对 entries **21**、results **30**。
+- 最终发布：`current -> releases/20261102-152148`，`previous -> releases/20261102-151654`（上一版为备份修复版）；`systemctl is-active fleeting` = active，enabled；日志只有启动信息。
 - 发布后数据：entries **21**、results **30**、sessions **1**、originalSessionPresent **true**；临时验证会话删除后 `/api/session` 返回 401。
 - 公网：`/fleeting/`、`/app.js`、`/style.css`、`/favicon.svg` 均 200；未登录 `/fleeting/api/session` 401；CSP/HSTS/nosniff/X-Frame-Options/Cache-Control 均存在；`/private` 仍 200，`go-sites-demo` 仍 active。
 - `/etc/cron.d/fleeting-backup` 已改为调用 Go 二进制 `fleeting backup -dir ... -keep 14`。
